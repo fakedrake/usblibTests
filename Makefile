@@ -7,25 +7,27 @@ export DYLD_LIBRARY_PATH=$(root)/lib:$$DYLD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$(root)/lib:$LD_LIBRARY_PATH
 CFLAGS=-Wall -I$(root)/include/libusb-1.0 -g
 libusb_h = $(root)/include/libusb-1.0/libusb.h
+libusb-repo = $(CURDIR)/libusb
 
-ifeq$(shell uname), "Darwin")
+ifeq ($(shell uname), Darwin)
 	libusb = $(CURDIR)/root/lib/libusb-1.0.dylib
 else
 	libusb = $(CURDIR)/root/lib/libusb-1.0.so
 endif
 
-all: libusbfind
+all: $(CURDIR)/libusbfind
 
 .PHONY:
 force: ;
-$(CURDIR)/libusbfind: libusb.c $(libusb) $(libsb_h)
-	gcc $(CFLAGS) libusb.c -lusb-1.0 -o $@
+$(CURDIR)/libusbfind: libusbfind.c $(libusb) $(libsb_h)
+	gcc $(CFLAGS) $< -lusb-1.0 -o $@
 
 $(libusb-repo):
 	git clone https://github.com/libusb/libusb $@
 
 $(libusb): $(libusb-repo)
-	cd $(libusb-repo) && ./configure --prefix=$(root)
+	@echo "Generating $(libusb) $(shell uname)"
+	cd $(libusb-repo) && ./configure --prefix=$(root) --enable-debug-log
 	$(MAKE) -C $(libusb-repo) CFLAGS="-g"
 	$(MAKE) -C $(libusb-repo) install
 
