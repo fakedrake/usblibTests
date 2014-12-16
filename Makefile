@@ -25,10 +25,9 @@ $(CURDIR)/libusbfind: libusbfind.c $(libusb) $(libsb_h)
 $(libusb-repo):
 	git clone https://github.com/libusb/libusb $@
 
-.ONESHELL:
 $(libusb-repo)/Makefile: $(libusb-repo)
-	cd $(libusb-repo)
-	./bootstrap.sh
+	cd $(libusb-repo) && 	\
+	./bootstrap.sh &&	\
 	./configure  --prefix=$(root) --enable-debug-log
 
 
