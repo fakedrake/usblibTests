@@ -25,9 +25,12 @@ $(CURDIR)/libusbfind: libusbfind.c $(libusb) $(libsb_h)
 $(libusb-repo):
 	git clone https://github.com/libusb/libusb $@
 
-$(libusb): $(libusb-repo)
+$(libusb-repo)/Makefile:
+	cd $(libusb-repo) && ./bootstrap.sh --prefix=$(root) --enable-debug-log
+
+
+$(libusb): $(libusb-repo) $(libusb-repo)/Makefile
 	@echo "Generating $(libusb) $(shell uname)"
-	cd $(libusb-repo) && ./configure --prefix=$(root) --enable-debug-log
 	$(MAKE) -C $(libusb-repo) CFLAGS="-g"
 	$(MAKE) -C $(libusb-repo) install
 
