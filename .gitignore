@@ -1,0 +1,6 @@
+root/
+libusb/
+GTAGS
+GRTAGS
+GPATH
+.dir-locals.el
