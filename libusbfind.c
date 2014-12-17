@@ -76,17 +76,15 @@ int main(int argc, char *argv[])
 
         MAY_FAIL(libusb_open(devs[i], &handle));
 
-        if (libusb_set_configuration(handle, 1))
-            fprintf(stderr, "Failed to set configuration\n");
-
+        MAY_FAIL(libusb_set_configuration(handle, 1));
         /* dev->os_priv->dev (darwin_cached_device) ->active_config */
         /* It is set with darwin_set_configuration */
         MAY_FAIL(libusb_get_active_config_descriptor(devs[i], &config));
+        dump_config_descriptor(config);
         libusb_free_config_descriptor(config);
         libusb_close(handle);
         printf("Found a good device! %04x:%04x\n",
                desc->idVendor, desc->idProduct);
-        dump_config_descriptor(config);
         return 0;
     }
 
