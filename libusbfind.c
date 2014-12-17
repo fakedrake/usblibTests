@@ -76,6 +76,9 @@ int main(int argc, char *argv[])
 
         MAY_FAIL(libusb_open(devs[i], &handle));
 
+        if (libusb_set_configuration(handle, 1))
+            fprintf(stderr, "Failed to set configuration\n");
+
         /* dev->os_priv->dev (darwin_cached_device) ->active_config */
         /* It is set with darwin_set_configuration */
         MAY_FAIL(libusb_get_active_config_descriptor(devs[i], &config));
