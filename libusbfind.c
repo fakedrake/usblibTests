@@ -9,6 +9,7 @@ struct dev {
 } devices[] = {
     {0x16c0, 0x05dc},           /* USBASP */
     {0x1781, 0x0C9F},           /* USBTinyISP */
+    {0x03eb, 0x2104},           /* AVRISP mkII */
     {0x067b, 0x2303},           /* Some serial thingie */
     {0x0,0x0}
 };
@@ -52,26 +53,61 @@ void dump_config_descriptor(struct libusb_config_descriptor * config)
     DUMP_ATTR(config->extra_length);
 }
 
+int action (libusb_context *ctx, struct libusb_device_handle* handle,
+            struct libusb_config_descriptor *config)
+{
+    unsigned char data[] = {1};
+    int* transferred ;
+    const struct libusb_interface_descriptor * altsetting = config->interface->altsetting;
+    printf("Altsetting found %p, %d\n", altsetting,
+           config->interface->num_altsetting);
+    const struct libusb_endpoint_descriptor* ep = altsetting->endpoint;
+    printf("Endpoint found\n");
+    int ret = libusb_bulk_transfer(handle, ep->bEndpointAddress, data, sizeof(data), transferred, 0);
+    printf("BulkRet: %d\n", ret);
+    switch (ret) {
+        case (LIBUSB_ERROR_TIMEOUT):
+                fprintf(stderr, "USBERROR: LIBUSB_ERROR_TIMEOUT\n");
+                return ret;
+        case (LIBUSB_ERROR_PIPE):
+                fprintf(stderr, "USBERROR: LIBUSB_ERROR_PIPE\n");
+                return ret;
+        case (LIBUSB_ERROR_OVERFLOW):
+                fprintf(stderr, "USBERROR: LIBUSB_ERROR_OVERFLOW\n");
+                return ret;
+        case (LIBUSB_ERROR_NO_DEVICE):
+                fprintf(stderr, "USBERROR: LIBUSB_ERROR_NO_DEVICE\n");
+                return ret;
+        case (LIBUSB_ERROR_IO):
+                fprintf(stderr, "USBERROR: LIBUSB_ERROR\n");
+                return ret;
+        default: return ret;
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    int errno = 0, i, cnt;
-    libusb_device_handle* handle;
-    libusb_context* usb_context;
-    struct libusb_config_descriptor *config;
-    struct libusb_device_descriptor *desc;
+    int errno = 1, i, cnt;
+    libusb_device_handle* handle = NULL;
+    libusb_context* usb_context = NULL;
+    struct libusb_config_descriptor *config = NULL;
+    struct libusb_device_descriptor desc;
 
-    libusb_device **devs;
+    libusb_device **devs = NULL;
 
     printf("Setting up\n");
     MAY_FAIL(libusb_init(&usb_context));
-    libusb_set_debug(usb_context, 4);
+    // libusb_set_debug(usb_context, 4);
     printf("Looking for devices\n");
-    cnt=libusb_get_device_list(usb_context, &devs);
+    cnt = libusb_get_device_list(usb_context, &devs);
     printf("Found %d devices\n", cnt);
     for (i=0; i<cnt; i++) {
-        libusb_get_device_descriptor(devs[i], desc);
+        libusb_get_device_descriptor(devs[i], &desc);
+        printf("DEV: vendor: 0x%x(%d), product:0x%x(%d)\n",
+               desc.idVendor, desc.idVendor, desc.idProduct,
+               desc.idProduct);
 
-        if (!match_dev(desc))
+        if (!match_dev(&desc))
             continue;
 
         MAY_FAIL(libusb_open(devs[i], &handle));
@@ -84,11 +120,11 @@ int main(int argc, char *argv[])
         libusb_free_config_descriptor(config);
         libusb_close(handle);
         printf("Found a good device! %04x:%04x\n",
-               desc->idVendor, desc->idProduct);
-        return 0;
+               desc.idVendor, desc.idProduct);
+        errno = action(usb_context, handle, config);
+        break;
     }
-
-    fprintf(stderr, "No known device found!\n");
     libusb_exit(usb_context);
-    return 1;
+    if (errno == 1) fprintf(stderr, "No known device found!\n");
+    return errno;
 }
