@@ -5,6 +5,7 @@ export DYLD_LIBRARY_PATH=$(root)/lib:$$DYLD_LIBRARY_PATH
 
 # For linux
 export LD_LIBRARY_PATH=$(root)/lib:$LD_LIBRARY_PATH
+export LIBRARY_PATH=$(root)/lib:LIBRARY_PATH
 CFLAGS=-Wall -I$(root)/include/libusb-1.0 -g
 libusb_h = $(root)/include/libusb-1.0/libusb.h
 libusb-repo = $(CURDIR)/libusb
